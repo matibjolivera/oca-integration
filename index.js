@@ -15,6 +15,11 @@ app.get('/api/offices', async (req, res) => {
     res.json(await conversion(response.data))
 })
 
+app.get('/api/shipping_status', async (req, res) => {
+    let response = await axios.get(OCA_URL + 'TrackingEnvio_EstadoActual?numeroEnvio=' + req.query.tracking_number);
+    res.json(await conversion(response.data))
+})
+
 
 app.listen(3000, () => {
     console.log(`Example app listening on port 3000`)
