@@ -32,8 +32,9 @@ app.get('/api/estimate_shipping_cost', async (req, res) => {
 
 function getXMLORByOrder(xw, orders) {
     orders.forEach((order) => {
+        const sucursalNumber = order.sucursal_number ? order.sucursal_number : "0"
         xw.write(`<envio idoperativa="${order.operative_number}" nroremito="${order.id}">`);
-        xw.write(`<destinatario apellido="${order.lastname}" nombre="${order.firstname}" calle="${order.street}" nro="${order.number}" piso="${order.floor}" depto="${order.door}" localidad="${order.city}" provincia="${order.province}" cp="${order.zip_code}" telefono="${order.phone}" email="${order.email}" idci="0" celular="${order.phone}" observaciones="${order.notes}"/>`);
+        xw.write(`<destinatario apellido="${order.lastname}" nombre="${order.firstname}" calle="${order.street}" nro="${order.number}" piso="${order.floor}" depto="${order.door}" localidad="${order.city}" provincia="${order.province}" cp="${order.zip_code}" telefono="${order.phone}" email="${order.email}" idci="${sucursalNumber}" celular="${order.phone}" observaciones="${order.notes}"/>`);
         xw.write('<paquetes>');
         xw.write(`<paquete alto="${order.height}" ancho="${order.width}" largo="${order.length}" peso="${order.weight}" valor="${order.price}" cant="${order.quantity}"/>`);
         xw.write('</paquetes>');
@@ -80,7 +81,39 @@ app.post('/api/generate_or', async (req, res) => {
 
     const response = await axios(config)
     const json = await conversion(response.data)
-    res.json(json.DataSet['diffgr:diffgram'].Resultado.DetalleIngresos)
+
+    const details = json.DataSet['diffgr:diffgram'].Resultado.DetalleIngresos
+    let orders = []
+    if (Array.isArray(details)) {
+        for (let [key, detail] of Object.entries(details)) {
+            orders.push({
+                'id': detail.Remito._text,
+                'tracking_number': detail.NumeroEnvio._text,
+                'admission_order_id': detail.OrdenRetiro._text,
+                'details': detail
+            })
+        }
+    } else {
+        orders.push({
+            'id': details.Remito._text,
+            'tracking_number': details.NumeroEnvio._text,
+            'admission_order_id': details.OrdenRetiro._text,
+            'details': details
+        })
+    }
+    const ordersString = JSON.stringify(orders)
+    console.log(ordersString)
+    let conf = {
+        method: 'post',
+        url: 'https://footprintsclothes.com.ar/wp-json/oca/generate-labels',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: ordersString
+    };
+    console.log("CONFIG", conf)
+    const labelsGenerated = await axios(conf)
+    res.json(labelsGenerated.data)
 })
 
 app.listen(3000, () => {
