@@ -34,7 +34,7 @@ function getXMLORByOrder(xw, orders) {
     orders.forEach((order) => {
         const sucursalNumber = order.sucursal_number ? order.sucursal_number : "0"
         xw.write(`<envio idoperativa="${order.operative_number}" nroremito="${order.id}">`);
-        xw.write(`<destinatario apellido="${order.lastname}" nombre="${order.firstname}" calle="${order.street}" nro="${order.number}" piso="${order.floor}" depto="${order.door}" localidad="${order.city}" provincia="${order.province}" cp="${order.zip_code}" telefono="${order.phone}" email="${order.email}" idci="${sucursalNumber}" celular="${order.phone}" observaciones="${order.notes}"/>`);
+        xw.write(`<destinatario apellido="${order.lastname}" nombre="${order.firstname}" calle="${order.street}" nro="" localidad="${order.city}" provincia="${order.province}" cp="${order.zip_code}" telefono="${order.phone}" email="${order.email}" idci="${sucursalNumber}" celular="${order.phone}" observaciones="${order.notes}"/>`);
         xw.write('<paquetes>');
         xw.write(`<paquete alto="${order.height}" ancho="${order.width}" largo="${order.length}" peso="${order.weight}" valor="${order.price}" cant="${order.quantity}"/>`);
         xw.write('</paquetes>');
