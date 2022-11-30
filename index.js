@@ -62,6 +62,7 @@ async function getXMLOR(orders) {
 }
 
 app.post('/api/generate_or', async (req, res) => {
+    try {
     const data = qs.stringify({
         'usr': process.env.USER_OCA,
         'psw': process.env.PASSWORD_OCA,
@@ -114,6 +115,9 @@ app.post('/api/generate_or', async (req, res) => {
     console.log("CONFIG", conf)
     const labelsGenerated = await axios(conf)
     res.json(labelsGenerated.data)
+    } catch (e) {
+          res.status(500).send(e)
+    }
 })
 
 app.listen(3000, () => {
