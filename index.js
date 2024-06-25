@@ -119,6 +119,7 @@ app.post('/api/generate_or', async (req, res) => {
             const labelsGenerated = await axios(conf)
             res.json(labelsGenerated.data)
         }
+        res.json(orders)
     } catch (e) {
           res.status(500).send(e)
     }
