@@ -63,58 +63,62 @@ async function getXMLOR(orders) {
 
 app.post('/api/generate_or', async (req, res) => {
     try {
-    const data = qs.stringify({
-        'usr': process.env.USER_OCA,
-        'psw': process.env.PASSWORD_OCA,
-        'xml_Datos': await getXMLOR(req.body.orders),
-        'ConfirmarRetiro': process.env.SEND_WITHOUT_CART,
-        'ArchivoCliente': '',
-        'ArchivoProceso': ''
-    });
-    const config = {
-        method: 'post',
-        url: OCA_URL + '/IngresoORMultiplesRetiros',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        data: data
-    };
-
-    const response = await axios(config)
-    const json = await conversion(response.data)
-
-    const details = json.DataSet['diffgr:diffgram'].Resultado.DetalleIngresos
-    let orders = []
-    if (Array.isArray(details)) {
-        for (let [key, detail] of Object.entries(details)) {
+        const forStore = req.body.for_store !== undefined ? req.body.for_store : true;
+        const data = qs.stringify({
+            'usr': process.env.USER_OCA,
+            'psw': process.env.PASSWORD_OCA,
+            'xml_Datos': await getXMLOR(req.body.orders),
+            'ConfirmarRetiro': process.env.SEND_WITHOUT_CART,
+            'ArchivoCliente': '',
+            'ArchivoProceso': ''
+        });
+        const config = {
+            method: 'post',
+            url: OCA_URL + '/IngresoORMultiplesRetiros',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            data: data
+        };
+    
+        const response = await axios(config)
+        const json = await conversion(response.data)
+    
+        const details = json.DataSet['diffgr:diffgram'].Resultado.DetalleIngresos
+        let orders = []
+        if (Array.isArray(details)) {
+            for (let [key, detail] of Object.entries(details)) {
+                orders.push({
+                    'id': detail.Remito._text,
+                    'tracking_number': detail.NumeroEnvio._text,
+                    'admission_order_id': detail.OrdenRetiro._text,
+                    'details': detail
+                })
+            }
+        } else {
             orders.push({
-                'id': detail.Remito._text,
-                'tracking_number': detail.NumeroEnvio._text,
-                'admission_order_id': detail.OrdenRetiro._text,
-                'details': detail
+                'id': details.Remito._text,
+                'tracking_number': details.NumeroEnvio._text,
+                'admission_order_id': details.OrdenRetiro._text,
+                'details': details
             })
         }
-    } else {
-        orders.push({
-            'id': details.Remito._text,
-            'tracking_number': details.NumeroEnvio._text,
-            'admission_order_id': details.OrdenRetiro._text,
-            'details': details
-        })
-    }
-    const ordersString = JSON.stringify(orders)
-    console.log(ordersString)
-    let conf = {
-        method: 'post',
-        url: 'https://footprintsclothes.com.ar/wp-json/oca/generate-labels',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        data: ordersString
-    };
-    console.log("CONFIG", conf)
-    const labelsGenerated = await axios(conf)
-    res.json(labelsGenerated.data)
+        const ordersString = JSON.stringify(orders)
+        console.log(ordersString)
+    
+        if (forStore) {
+            let conf = {
+                method: 'post',
+                url: 'https://footprintsclothes.com.ar/wp-json/oca/generate-labels',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: ordersString
+            };
+            console.log("CONFIG", conf)
+            const labelsGenerated = await axios(conf)
+            res.json(labelsGenerated.data)
+        }
     } catch (e) {
           res.status(500).send(e)
     }
